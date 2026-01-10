@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="results-container">
+    <h1>Processing Complete!</h1>
+    <p>Your image has been processed successfully.</p>
+    <a href="{{ url_for('home') }}" class="btn">Restore Another Photo</a>
+</div>
+{% endblock %}
