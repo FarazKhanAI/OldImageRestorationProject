@@ -1,61 +1,117 @@
+# 📸 BringMe — AI Photo Restoration Web App
+
+<p align="center">
+  <img src="https://img.shields.io/badge/BringMe-Photo%20Restoration-blue" />
+  <img src="https://img.shields.io/badge/Flask-2.3.3-green" />
+  <img src="https://img.shields.io/badge/Python-3.10%2B-yellow" />
+  
+</p>
+
+<p align="center"><b>Revive your old memories with AI-Powered Photo Restoration</b></p>
+
+## ✨ Features
+
+- 🖼️ **AI-Powered Restoration** — Removes scratches, dust, and minor damage using ZeroScratches model
+- ⚡ **Quick Processing** — Restores photos in seconds with lightweight AI inference
+- 🌓 **Modern UI** — Responsive interface with both Light & Dark themes
 
 
-## 🚀 Old Image Restoration App
 
-### New Features:
-1. **BPBTL Wrapper** - Complete wrapper for Bringing-Old-Photos-Back-to-Life model
-2. **ZeroScratches Integration** - Fast scratch removal model
-3. **Unified Model Manager** - Single interface for both models
-4. **Comprehensive Testing** - Complete test suite with sample images
-5. **Production-Ready Flask App** - Full web interface with upload/processing/download
+## 🛠️ Tech Stack
 
-### Model Status:
-- ✅ **ZeroScratches**: Fully functional (~7-10 seconds per image)
-- ✅ **BPBTL**: Fully functional (~10-15 seconds per image)
-- ✅ **Dual-Model Support**: Users can choose between fast cleaning or deep restoration
+- **Backend**: Flask (Python 3.10.19)
+- **AI Models**: ZeroScratches, BPBTL (Coming Soon)
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Styling**: Custom CSS with modern theme system
+- **File Handling**: Werkzeug, PIL/Pillow
+- **Performance**: Multi-threading, rate limiting
 
-### Project Structure Updates:
-- \`models/\` - Complete model wrappers and test suite
-- \`tests/\` - Test images and validation scripts
-- \`utils/\` - File handling, image processing, parallel execution
-- \`templates/\` - Enhanced Flask templates
-- \`static/\` - CSS/JavaScript for modern UI
 
-### Getting Started:
+
+
+
+
+### **Clone Repository**
 ```bash
-# Clone the repository
-git clone https://github.com/FarazKhanAI/OldImageRestorationProject.git
-cd OldImageRestorationProject
+    git clone https://github.com/FarazKhanAI/OldImageRestorationProject.git
+    cd OldImageRestorationProject
+```
 
-# Install dependencies
-pip install -r requirements.txt
-pip install zeroscratches  # Additional model package
-
-# Download BPBTL checkpoints (see setup_models.py)
-python utils/download_models.py
-
-# Run the application
-python app.py
+### **Create virtual environment**
+```bash
+    python -m venv venv
+    source venv/bin/activate 
+    # On Windows:venv\Scripts\activate
+```
 
 
-### API Usage:
-python
-from models.model_manager import ModelManager
+### **Install dependencies**
+```bash
+    pip install -r requirements.txt
+```
 
-# Quick scratches removal
-result = ModelManager.restore_image('zeroscratches', 'input.jpg', 'output.jpg')
+### **Run the application**
+```bash
+    python app.py
+```
 
-# Deep restoration for damaged photos
-result = ModelManager.restore_image('bptbl', 'old_photo.jpg', 'restored.jpg')
-
-
----
-
-**Note**: BPBTL model checkpoints need to be downloaded separately due to size.
-Run \`python utils/download_models.py\` or place checkpoints in \`checkpoints/bptbl/\`.
+### **Open in browser**
+```bash
+    http://localhost:5000
+```
 
 
-# Commit the updated README
-git add README.md
-git commit -m "Update README with new model integrations and setup instructions"
-git push origin main
+
+
+## Project Structure
+
+```
+BringMe/
+├── app.py                    # Main Flask application
+├── models/                   # AI model implementations
+│   ├── base_restorer.py     # Base abstract class for restorers
+│   ├── model_manager.py     # Model management and orchestration
+│   └── zeroscratches_wrapper.py  # ZeroScratches model wrapper
+├── static/                  # Static assets
+│   ├── css/                # Stylesheets for all pages
+│   ├── js/                 # JavaScript files
+│   ├── uploads/            # User uploaded images
+│   └── results/            # AI processed results
+├── templates/              # HTML templates
+│   ├── base.html          # Base template with header/footer
+│   ├── home.html          # Upload page with model selection
+│   ├── processing.html    # Loading page with progress
+│   ├── results.html       # Results display page
+│   └── history.html       # History dashboard
+├── requirements.txt        # Python dependencies
+├── .gitignore             # Git ignore file
+└── README.md              # Project documentation
+```
+
+
+
+## 👥 Development Team
+
+- Faraz Khan  
+- Jawad Khan  
+- Gul-e-Rana  
+
+**Repository:** https://github.com/FarazKhanAI/OldImageRestorationProject.git
+
+
+
+## 🔮 Future Enhancements
+### Batch processing for multiple images
+
+- Additional restoration models
+
+- Cloud storage integration
+
+- Advanced editing tools
+
+
+##
+
+<div 
+    align="center"> Made with ❤️ by the BringMe Team 
+    </div>
