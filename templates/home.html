@@ -3,89 +3,119 @@
 {% block content %}
 <div class="upload-page">
     <div class="upload-container">
-        <!-- Initial Upload Button -->
-        <div class="upload-button-container" id="uploadButtonContainer">
-            <button class="upload-main-button" onclick="document.getElementById('fileInput').click()">
-                <i class="fas fa-cloud-upload-alt"></i> Upload Old Image
-            </button>
-            <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.bmp,.tiff,.webp" style="display: none;">
-            <p class="upload-hint">Supports: JPG, PNG, BMP, TIFF, WEBP • Max 10MB</p>
+        <!-- Initial Upload Section -->
+        <div class="upload-init-section" id="uploadInit">
+            <div class="upload-header">
+                <h1><i class="fas fa-magic"></i> Restore Your Old Photos</h1>
+                <p class="subtitle">Upload an old photo to bring it back to life</p>
+            </div>
+            
+            <div class="upload-button-container">
+                <button class="upload-main-button" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload Old Image
+                </button>
+                <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.bmp,.tiff,.webp" style="display: none;">
+                <p class="upload-hint">Supports: JPG, PNG, BMP, TIFF, WEBP • Max 10MB</p>
+            </div>
         </div>
 
         <!-- After Upload Section -->
-        <div class="after-upload" id="afterUpload" style="display: none;">
-            <!-- Image Preview -->
-            <div class="image-section">
-                <div class="image-title">
-                    <i class="fas fa-image"></i> Image Preview
-                </div>
-                <div class="image-preview">
-                    <img id="previewImage" src="" alt="Uploaded Image">
+        <div class="upload-preview-section" id="uploadPreview" style="display: none;">
+            <!-- Header -->
+            <div class="preview-header">
+                <h2><i class="fas fa-image"></i> Ready to Restore</h2>
+                <p class="subtitle">Review your image and select restoration model</p>
+            </div>
+
+            <!-- Image Display (like results page) -->
+            <div class="preview-image-section">
+                <div class="image-wrapper">
+                    <div class="image-label">
+                        <i class="fas fa-image"></i>
+                        <span>Image to Restore</span>
+                    </div>
+                    <img id="previewImage" src="" alt="Uploaded Image" class="preview-image">
                 </div>
             </div>
 
-            <!-- Model Selection -->
-            <div class="model-section">
-                <div class="model-title">
-                    <i class="fas fa-cogs"></i> Select Restoration Model
+
+
+            
+                        <!-- Model Selection -->
+            <div class="model-selection-section">
+                <div class="section-title">
+                    <i class="fas fa-cogs"></i>
+                    <h3>Select Restoration Model</h3>
                 </div>
-                <select id="modelSelect" class="model-select">
-                    <option value="" disabled selected>Choose a model...</option>
-                    <option value="quick">Quick Clean (ZeroScratches Model)</option>
-                    <option value="deep">Deep Restoration (BPBTL Model)</option>
-                </select>
+                
+                <div class="model-dropdown-container">
+                    <div class="dropdown-header">
+                        <i class="fas fa-robot"></i>
+                        <span>Restoration Model</span>
+                    </div>
+                    
+                    <select id="modelSelect" class="model-select">
+                        <option value="quick" selected>Quick Clean (ZeroScratches Model)</option>
+                        <option value="deep" disabled>Deep Restoration (BPBTL Model) - Coming Soon</option>
+                    </select>
+    
+                </div>
             </div>
+
 
             <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button class="btn remove-btn" id="removeBtn">
-                    <i class="fas fa-trash"></i> Remove
-                </button>
-                <button class="btn change-btn" id="changeBtn">
-                    <i class="fas fa-sync"></i> Change Image
-                </button>
-                <button class="btn process-btn" id="processBtn" disabled>
-                    <i class="fas fa-magic"></i> Process Image
-                </button>
+            <div class="action-section">
+                <div class="button-group">
+                    <button class="btn remove-btn" id="removeBtn">
+                        <i class="fas fa-trash"></i>
+                        Remove
+                    </button>
+                    <button class="btn change-btn" id="changeBtn">
+                        <i class="fas fa-sync"></i>
+                        Change Image
+                    </button>
+                    <button class="btn process-btn" id="processBtn">
+                        <i class="fas fa-magic"></i>
+                        Process Image
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Hidden Form -->
+<!-- Hidden Form for Backend -->
 <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{{ url_for('process_image') }}" style="display: none;">
     <input type="file" name="image" id="formFileInput">
-    <input type="hidden" name="model" id="formModelInput">
+    <input type="hidden" name="model" id="formModelInput" value="quick">
 </form>
 
 <script>
-// Simple JavaScript - no event listener issues
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Page loaded");
-    
-    // Get elements
+    // Elements
     const fileInput = document.getElementById('fileInput');
     const previewImage = document.getElementById('previewImage');
-    const uploadButtonContainer = document.getElementById('uploadButtonContainer');
-    const afterUpload = document.getElementById('afterUpload');
-    const modelSelect = document.getElementById('modelSelect');
+    const uploadInit = document.getElementById('uploadInit');
+    const uploadPreview = document.getElementById('uploadPreview');
     const removeBtn = document.getElementById('removeBtn');
     const changeBtn = document.getElementById('changeBtn');
     const processBtn = document.getElementById('processBtn');
+    const modelSelect = document.getElementById('modelSelect');
+    const formModelInput = document.getElementById('formModelInput');
+    const formFileInput = document.getElementById('formFileInput');
+    const uploadForm = document.getElementById('uploadForm');
     
-    // File input change event
+    let selectedModel = 'quick';
+    
+    // File input change
     fileInput.addEventListener('change', function(e) {
-        console.log("File input changed");
         const file = e.target.files[0];
         if (file) {
             handleFileUpload(file);
         }
     });
     
-    // Handle file upload
     function handleFileUpload(file) {
-        console.log("Processing file:", file.name);
-        
         // Validate
         if (!file.type.startsWith('image/')) {
             alert('Please select an image file');
@@ -97,111 +127,96 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Read file
+        // Read and display image
         const reader = new FileReader();
-        
         reader.onload = function(event) {
-            console.log("File read successfully");
-            // Show image
             previewImage.src = event.target.result;
-            previewImage.style.display = 'block';
             
-            // Switch views
-            uploadButtonContainer.style.display = 'none';
-            afterUpload.style.display = 'block';
+            // Switch to preview section
+            uploadInit.style.display = 'none';
+            uploadPreview.style.display = 'block';
+            
+            // Scroll to preview
+            uploadPreview.scrollIntoView({ behavior: 'smooth' });
         };
-        
-        reader.onerror = function() {
-            alert('Error reading file');
-        };
-        
         reader.readAsDataURL(file);
     }
     
+    // Model selection
+    formModelInput.value = selectedModel;
+    
+    // Disable deep model selection
+    modelSelect.addEventListener('change', function() {
+        if (this.value === 'deep') {
+            alert('Deep Restoration is coming soon. Please select Quick Clean for now.');
+            this.value = 'quick';
+        }
+        selectedModel = this.value;
+        formModelInput.value = selectedModel;
+    });
+    
     // Remove button
     removeBtn.addEventListener('click', function() {
-        console.log("Remove clicked");
         // Reset everything
         fileInput.value = '';
         previewImage.src = '';
-        previewImage.style.display = 'none';
-        modelSelect.value = '';
-        processBtn.disabled = true;
+        selectedModel = 'quick';
+        formModelInput.value = 'quick';
+        modelSelect.value = 'quick';
         
-        afterUpload.style.display = 'none';
-        uploadButtonContainer.style.display = 'block';
+        // Switch back to upload section
+        uploadPreview.style.display = 'none';
+        uploadInit.style.display = 'block';
     });
     
     // Change button
     changeBtn.addEventListener('click', function() {
-        console.log("Change clicked");
         fileInput.click();
     });
     
-    // Model select change
-    modelSelect.addEventListener('change', function() {
-        console.log("Model selected:", modelSelect.value);
-        processBtn.disabled = !modelSelect.value;
-    });
-    
-
-
-
-
-
-    
     // Process button
     processBtn.addEventListener('click', function() {
-        console.log("Process clicked");
-        if (!modelSelect.value) {
-            alert('Please select a model first');
+        if (!fileInput.files[0]) {
+            alert('Please select an image first');
             return;
         }
         
-        // Show loading
+        // Show loading state
+        const originalHtml = processBtn.innerHTML;
         processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         processBtn.disabled = true;
         
-        // Submit form
-        const form = document.getElementById('uploadForm');
-        const formModelInput = document.getElementById('formModelInput');
-        const formFileInput = document.getElementById('formFileInput');
-        
-        if (formModelInput) formModelInput.value = modelSelect.value;
-        
-        // Copy file to form
+        // Prepare form data
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(fileInput.files[0]);
-        if (formFileInput) formFileInput.files = dataTransfer.files;
+        formFileInput.files = dataTransfer.files;
         
-        form.submit();
+        // Submit form
+        uploadForm.submit();
     });
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // Test function
-    window.testImage = function() {
-        previewImage.src = 'https://via.placeholder.com/400x300.png?text=Test+Image';
-        previewImage.style.display = 'block';
-        uploadButtonContainer.style.display = 'none';
-        afterUpload.style.display = 'block';
-        console.log("Test image loaded");
-    };
+    // Drag and drop support
+    const uploadContainer = document.querySelector('.upload-container');
+    
+    uploadContainer.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadContainer.classList.add('dragover');
+    });
+    
+    uploadContainer.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadContainer.classList.remove('dragover');
+    });
+    
+    uploadContainer.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadContainer.classList.remove('dragover');
+        
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            handleFileUpload(file);
+        }
+    });
 });
 </script>
 {% endblock %}
