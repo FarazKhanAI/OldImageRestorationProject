@@ -6,7 +6,8 @@ import logging
 from typing import Dict, Any, Optional
 
 from .zeroscratches_wrapper import ZeroScratchesWrapper
-from .bptbl_wrapper import BPBTLWrapper
+# Remove or comment out BPBTL import since we don't have it
+# from .bptbl_wrapper import BPBTLWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class ModelManager:
     def __init__(self):
         if not self._initialized:
             self.zeroscratches = None
-            self.bptbl = None
+            # self.bptbl = None  # Comment out for now
             self._initialized = True
             logger.info("ModelManager initialized")
     
@@ -48,38 +49,12 @@ class ModelManager:
             logger.error(f"Error initializing ZeroScratches: {str(e)}")
             return False
     
-
-
-
-    # In your model_manager.py's initialize_bptbl method:
+    # Comment out BPBTL initialization for now
     def initialize_bptbl(self, bptbl_script_path: Optional[str] = None) -> bool:
         """Initialize BPBTL model."""
-        try:
-            logger.info("Initializing BPBTL model...")
-            
-            # Use the new wrapper
-            self.bptbl = BPBTLWrapper(
-                bptbl_root="checkpoints/bptbl",  # Path to your BPBTL
-                gpu_id=-1,  # Use CPU (-1) or GPU (0, 1, etc.)
-                with_scratch=True
-            )
-            
-            success = self.bptbl.initialize()
-            
-            if success:
-                logger.info("✅ BPBTL wrapper ready for production")
-            else:
-                logger.warning("⚠️ BPBTL initialization issues - check installation")
-            
-            return success
-            
-        except Exception as e:
-            logger.error(f"Error initializing BPBTL: {str(e)}")
-            return False
-
-
-
-
+        logger.warning("BPBTL model not available in current setup")
+        return False
+    
     def initialize_all(self) -> Dict[str, bool]:
         """Initialize all available models."""
         results = {}
@@ -87,8 +62,8 @@ class ModelManager:
         # Initialize ZeroScratches
         results['zeroscratches'] = self.initialize_zeroscratches()
         
-        # Initialize BPBTL
-        results['bptbl'] = self.initialize_bptbl()
+        # BPBTL is disabled for now
+        results['bptbl'] = False
         
         logger.info(f"Model initialization results: {results}")
         return results
@@ -100,8 +75,9 @@ class ModelManager:
         if self.zeroscratches and self.zeroscratches.is_initialized():
             models_info['zeroscratches'] = self.zeroscratches.get_model_info()
         
-        if self.bptbl:
-            models_info['bptbl'] = self.bptbl.get_model_info()
+        # BPBTL is disabled for now
+        # if self.bptbl:
+        #     models_info['bptbl'] = self.bptbl.get_model_info()
         
         return models_info
     
@@ -115,20 +91,9 @@ class ModelManager:
         if not available:
             return "none"
         
-        # Simple recommendation logic
-        if image_path:
-            # You could add image analysis here
-            # For now, default to zeroscratches if available
-            if 'zeroscratches' in available:
-                return 'zeroscratches'
-            elif 'bptbl' in available:
-                return 'bptbl'
-        else:
-            # Generic recommendation
-            if 'zeroscratches' in available:
-                return 'zeroscratches'
-            elif 'bptbl' in available:
-                return 'bptbl'
+        # Always use zeroscratches if available
+        if 'zeroscratches' in available:
+            return 'zeroscratches'
         
         return "none"
     
@@ -137,7 +102,31 @@ class ModelManager:
         if self.zeroscratches:
             self.zeroscratches.cleanup()
         
-        if self.bptbl:
-            self.bptbl.cleanup()
+        # if self.bptbl:
+        #     self.bptbl.cleanup()
         
         logger.info("All model resources cleaned up")
+
+# Add this convenience function that was being imported
+def restore_image(input_path, output_path, model_type='quick'):
+    """Convenience function to restore a single image."""
+    try:
+        manager = ModelManager()
+        if model_type == 'quick':
+            if not manager.zeroscratches:
+                manager.initialize_zeroscratches()
+            
+            from PIL import Image
+            img = Image.open(input_path)
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            result = manager.zeroscratches.process_single(img)
+            result.save(output_path)
+            return True
+        else:
+            logger.error("Only 'quick' model is currently available")
+            return False
+    except Exception as e:
+        logger.error(f"Error in restore_image: {e}")
+        return False

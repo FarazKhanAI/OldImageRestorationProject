@@ -143,85 +143,149 @@
     <!-- Hidden redirect form -->
     <form id="redirectForm" action="{{ url_for('results') }}" method="GET" style="display: none;"></form>
 </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Progress simulation
+    const jobId = '{{ job_id }}';
+    console.log("Job ID for polling:", jobId);
+    
+    if (!jobId) {
+        console.error("No job ID found!");
+        alert("No processing job found. Please upload an image first.");
+        window.location.href = '/';
+        return;
+    }
+    
+    let checkInterval;
+    let simulationInterval;
     let progress = 0;
-    const progressFill = document.getElementById('progressFill');
+    const progressBar = document.getElementById('progressFill');
     const percentage = document.getElementById('percentage');
     const steps = document.querySelectorAll('.step');
     const timeRemaining = document.getElementById('timeRemaining');
     
+    // Update progress bar function
+    function updateProgressBar(value) {
+        progress = Math.min(value, 100);
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+        if (percentage) {
+            percentage.textContent = `${Math.round(progress)}%`;
+        }
+        
+        // Update steps
+        steps.forEach((step, index) => {
+            if (progress >= (index + 1) * 20) {
+                step.classList.add('active');
+            }
+        });
+        
+        // Update time estimate
+        if (timeRemaining) {
+            const remaining = Math.max(0, Math.floor((100 - progress) / 3));
+            timeRemaining.textContent = `Estimated time remaining: ${remaining} seconds`;
+        }
+    }
+    
+    // Start simulation progress (for UX)
+    function startSimulation() {
+        simulationInterval = setInterval(() => {
+            if (progress < 90) { // Only simulate up to 90%
+                progress += 2;
+                updateProgressBar(progress);
+            } else {
+                clearInterval(simulationInterval);
+            }
+        }, 1000);
+    }
+    
+    // Check processing status from server
+    function checkProcessingStatus() {
+        fetch(`/api/processing-status/${jobId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Status response:", data);
+                
+                if (data.status === 'completed') {
+                    // Stop checking
+                    clearInterval(checkInterval);
+                    clearInterval(simulationInterval);
+                    
+                    // Set to 100%
+                    updateProgressBar(100);
+                    
+                    // Add small delay for UX, then redirect
+                    setTimeout(() => {
+                        window.location.href = '/results';
+                    }, 1500);
+                    
+                } else if (data.status === 'error') {
+                    clearInterval(checkInterval);
+                    clearInterval(simulationInterval);
+                    alert('Processing failed: ' + (data.error || 'Unknown error'));
+                    window.location.href = '/';
+                } else if (data.status === 'processing') {
+                    // Model is processing, update progress to 50-90% range
+                    if (progress < 50) {
+                        updateProgressBar(50);
+                    }
+                    // Continue polling
+                }
+                // If pending or processing, continue waiting
+            })
+            .catch(error => {
+                console.error('Error checking status:', error);
+                // Don't stop on network errors, just log
+            });
+    }
+    
+    // Start simulation
+    startSimulation();
+    
+    // Start checking every 3 seconds
+    checkInterval = setInterval(checkProcessingStatus, 3000);
+    
+    // Initial check
+    checkProcessingStatus();
+    
+    // Add event listener for the refresh button
+    document.getElementById('refreshBtn')?.addEventListener('click', function() {
+        checkProcessingStatus();
+    });
+    
     // Fun facts carousel
+    let currentFact = 0;
     const facts = document.querySelectorAll('.fact');
     const dots = document.querySelectorAll('.dot');
-    let currentFact = 0;
     
-    // Update progress every 2 seconds
-    const progressInterval = setInterval(() => {
-        if (progress < 100) {
-            progress += Math.random() * 15 + 5; // 5-20% increment
-            if (progress > 100) progress = 100;
-            
-            progressFill.style.width = progress + '%';
-            percentage.textContent = Math.round(progress) + '%';
-            
-            // Update steps
-            const stepIndex = Math.floor(progress / 20);
-            steps.forEach((step, index) => {
-                if (index <= stepIndex) {
-                    step.classList.add('active');
-                }
-            });
-            
-            // Update time estimate
-            const remainingTime = Math.max(0, 30 - (progress/100 * 30));
-            timeRemaining.textContent = `Estimated time: ${Math.round(remainingTime)} seconds remaining`;
-            
-            // Check if processing is complete
-            if (progress >= 100) {
-                clearInterval(progressInterval);
-                setTimeout(() => {
-                    document.getElementById('redirectForm').submit();
-                }, 1000);
-            }
-        }
-    }, 2000);
-    
-    // Fun facts navigation
-    document.getElementById('prevFact').addEventListener('click', () => {
-        facts[currentFact].classList.remove('active');
-        dots[currentFact].classList.remove('active');
-        currentFact = (currentFact - 1 + facts.length) % facts.length;
-        facts[currentFact].classList.add('active');
-        dots[currentFact].classList.add('active');
-    });
-    
-    document.getElementById('nextFact').addEventListener('click', () => {
-        facts[currentFact].classList.remove('active');
-        dots[currentFact].classList.remove('active');
-        currentFact = (currentFact + 1) % facts.length;
-        facts[currentFact].classList.add('active');
-        dots[currentFact].classList.add('active');
-    });
-    
-    // Auto-rotate facts every 5 seconds
-    setInterval(() => {
-        facts[currentFact].classList.remove('active');
-        dots[currentFact].classList.remove('active');
-        currentFact = (currentFact + 1) % facts.length;
-        facts[currentFact].classList.add('active');
-        dots[currentFact].classList.add('active');
-    }, 5000);
-    
-    // If model info is passed from backend, update it
-    const modelName = document.getElementById('modelName');
-    const urlParams = new URLSearchParams(window.location.search);
-    const model = urlParams.get('model');
-    if (model) {
-        modelName.textContent = model.charAt(0).toUpperCase() + model.slice(1) + ' Model';
+    function showFact(index) {
+        facts.forEach(fact => fact.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
+        
+        facts[index].classList.add('active');
+        dots[index].classList.add('active');
     }
+    
+    document.getElementById('nextFact')?.addEventListener('click', function() {
+        currentFact = (currentFact + 1) % facts.length;
+        showFact(currentFact);
+    });
+    
+    document.getElementById('prevFact')?.addEventListener('click', function() {
+        currentFact = (currentFact - 1 + facts.length) % facts.length;
+        showFact(currentFact);
+    });
+    
+    // Auto-rotate facts every 8 seconds
+    setInterval(() => {
+        currentFact = (currentFact + 1) % facts.length;
+        showFact(currentFact);
+    }, 8000);
 });
 </script>
 {% endblock %}

@@ -48,29 +48,29 @@ class ZeroScratchesWrapper(BaseRestorer):
         
         logger.info(f"ZeroScratchesWrapper initialized with max_workers={max_workers}")
     
-    def _initialize_model(self) -> None:
-        """Lazy initialization of the ZeroScratches model."""
-        if not self._is_initialized:
-            try:
-                logger.info("Initializing ZeroScratches model...")
+    def initialize(self) -> bool:
+        """Initialize the ZeroScratches model."""
+        try:
+            logger.info("Initializing ZeroScratches model...")
+            
+            # The model will auto-download weights on first use
+            self._model = EraseScratches()
+            
+            # Test with a tiny dummy image to trigger download and verify functionality
+            dummy_img = Image.new('RGB', (512, 512), color='white')
+            test_result = self._model.erase(dummy_img)
+            
+            if isinstance(test_result, np.ndarray):
+                logger.info(f"ZeroScratches model initialized successfully. Test output shape: {test_result.shape}")
+                self._is_initialized = True
+                return True
+            else:
+                logger.error("ZeroScratches model test failed - unexpected output type")
+                return False
                 
-                # The model will auto-download weights on first use
-                self._model = EraseScratches()
-                
-                # Test with a tiny dummy image to trigger download and verify functionality
-                dummy_img = Image.new('RGB', (10, 10), color='white')
-                test_result = self._model.erase(dummy_img)
-                
-                if isinstance(test_result, np.ndarray):
-                    logger.info(f"ZeroScratches model initialized successfully. Test output shape: {test_result.shape}")
-                    self._is_initialized = True
-                else:
-                    logger.error("ZeroScratches model test failed - unexpected output type")
-                    raise RuntimeError("ZeroScratches model initialization test failed")
-                    
-            except Exception as e:
-                logger.error(f"Failed to initialize ZeroScratches model: {str(e)}")
-                raise
+        except Exception as e:
+            logger.error(f"Failed to initialize ZeroScratches model: {str(e)}")
+            return False
     
     def process_single(self, input_data: Union[str, Path, Image.Image, np.ndarray], 
                       **kwargs) -> Union[Image.Image, np.ndarray]:
@@ -93,7 +93,8 @@ class ZeroScratchesWrapper(BaseRestorer):
         """
         # Ensure model is initialized
         if not self._is_initialized:
-            self._initialize_model()
+            if not self.initialize():
+                raise RuntimeError("Failed to initialize ZeroScratches model")
         
         # Track input type to return same type
         input_type = type(input_data)
