@@ -2,8 +2,104 @@
 
 {% block content %}
 <div class="results-container">
-    <h1>Processing Complete!</h1>
-    <p>Your image has been processed successfully.</p>
-    <a href="{{ url_for('home') }}" class="btn">Restore Another Photo</a>
+    <!-- Header -->
+    <div class="results-header">
+        <h1><i class="fas fa-check-circle"></i> Restoration Complete!</h1>
+    </div>
+
+    <!-- Image with Download Button -->
+    <div class="image-section">
+        <div class="image-wrapper">
+            {% if restored_image %}
+                <img src="{{ url_for('static', filename='results/' + restored_image) }}" 
+                     alt="Restored Image" 
+                     class="restored-image"
+                     onerror="this.src='https://via.placeholder.com/800x600/393E46/DFD0B8?text=Restored+Image'">
+                <button class="download-corner-btn" onclick="downloadRestoredImage()">
+                    <i class="fas fa-download"></i>
+                </button>
+            {% else %}
+                <div class="placeholder-image">
+                    <i class="fas fa-image"></i>
+                    <p>Restored image not found</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Restoration Details -->
+    <div class="details-section">
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">Model Used:</span>
+                <span class="detail-value">
+                    {% if model_used == 'quick' %}
+                        Quick Clean Model
+                    {% else %}
+                        Deep Restoration Model
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Processing Time:</span>
+                <span class="detail-value">~25 seconds</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Date Restored:</span>
+                <span class="detail-value" id="currentDate"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn secondary-btn" onclick="window.location.href='{{ url_for('home') }}'">
+            <i class="fas fa-arrow-left"></i> Restore Another
+        </button>
+        <button class="btn" onclick="window.location.href='{{ url_for('history') }}'">
+            <i class="fas fa-history"></i> View History
+        </button>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current date
+    const now = new Date();
+    document.getElementById('currentDate').textContent = 
+        now.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric'
+        });
+});
+
+function downloadRestoredImage() {
+    const downloadBtn = event.currentTarget;
+    const originalHtml = downloadBtn.innerHTML;
+    
+    // Show loading state
+    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    downloadBtn.disabled = true;
+    
+    // Simulate download preparation
+    setTimeout(() => {
+        {% if restored_image %}
+            const imageUrl = "{{ url_for('static', filename='results/' + restored_image) }}";
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = "restored_{{ restored_image }}";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        {% else %}
+            alert('Restored image not available for download.');
+        {% endif %}
+        
+        // Restore button
+        downloadBtn.innerHTML = originalHtml;
+        downloadBtn.disabled = false;
+    }, 1000);
+}
+</script>
 {% endblock %}

@@ -1,0 +1,227 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="processing-container">
+    <div class="processing-header">
+        <h1><i class="fas fa-cog fa-spin processing-icon"></i> Restoring Your Memory</h1>
+        <p class="subtitle">Our AI is working its magic to restore your photo</p>
+    </div>
+
+    <div class="processing-content">
+        <!-- Progress Section -->
+        <div class="progress-section">
+            <div class="progress-header">
+                <h3>Progress</h3>
+                <div class="progress-time">
+                    <i class="fas fa-clock"></i>
+                    <span id="timeRemaining">Estimated time: 15-30 seconds</span>
+                </div>
+            </div>
+            
+            <div class="progress-bar-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-percentage">
+                    <span id="percentage">0%</span>
+                </div>
+            </div>
+            
+            <div class="progress-steps">
+                <div class="step active">
+                    <span class="step-number">1</span>
+                    <span class="step-text">Uploading & Analyzing</span>
+                    <i class="fas fa-check step-check"></i>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span class="step-text">Noise Reduction</span>
+                    <i class="fas fa-check step-check"></i>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span class="step-text">Color Correction</span>
+                    <i class="fas fa-check step-check"></i>
+                </div>
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <span class="step-text">Detail Enhancement</span>
+                    <i class="fas fa-check step-check"></i>
+                </div>
+                <div class="step">
+                    <span class="step-number">5</span>
+                    <span class="step-text">Finalizing Restoration</span>
+                    <i class="fas fa-check step-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fun Facts Section -->
+        <div class="fun-facts-section">
+            <h3><i class="fas fa-lightbulb"></i> Did You Know?</h3>
+            <div class="facts-container">
+                <div class="fact active">
+                    <div class="fact-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="fact-content">
+                        <h4>Photo Restoration History</h4>
+                        <p>Traditional photo restoration required hours of manual work by skilled artists. AI can now do this in seconds!</p>
+                    </div>
+                </div>
+                <div class="fact">
+                    <div class="fact-icon">
+                        <i class="fas fa-brush"></i>
+                    </div>
+                    <div class="fact-content">
+                        <h4>AI Learning Process</h4>
+                        <p>Our AI has analyzed over 1 million historical photos to learn restoration patterns and techniques.</p>
+                    </div>
+                </div>
+                <div class="fact">
+                    <div class="fact-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="fact-content">
+                        <h4>Common Issues Fixed</h4>
+                        <p>Most restored photos suffer from scratches, fading, water damage, or tears. AI handles all of these automatically.</p>
+                    </div>
+                </div>
+                <div class="fact">
+                    <div class="fact-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="fact-content">
+                        <h4>Neural Networks</h4>
+                        <p>Our restoration models use advanced neural networks that understand context to fill in missing details accurately.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="facts-nav">
+                <button class="fact-nav-btn" id="prevFact">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="fact-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+                <button class="fact-nav-btn" id="nextFact">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Model Info -->
+        <div class="model-info">
+            <div class="model-badge">
+                <i class="fas fa-robot"></i>
+                <span class="model-name" id="modelName">{{ model_used|default('quick')|title }} Model</span>
+            </div>
+            <p class="model-description">
+                {% if model_used == 'deep' %}
+                Using Deep Restoration model for maximum detail recovery and quality enhancement.
+                {% else %}
+                Using Quick Clean model for fast restoration of common issues like scratches and dust.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn secondary-btn" onclick="window.location.href='{{ url_for('home') }}'">
+                <i class="fas fa-arrow-left"></i> Cancel & Return
+            </button>
+            <button class="btn" id="refreshBtn" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> Refresh Status
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden redirect form -->
+    <form id="redirectForm" action="{{ url_for('results') }}" method="GET" style="display: none;"></form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Progress simulation
+    let progress = 0;
+    const progressFill = document.getElementById('progressFill');
+    const percentage = document.getElementById('percentage');
+    const steps = document.querySelectorAll('.step');
+    const timeRemaining = document.getElementById('timeRemaining');
+    
+    // Fun facts carousel
+    const facts = document.querySelectorAll('.fact');
+    const dots = document.querySelectorAll('.dot');
+    let currentFact = 0;
+    
+    // Update progress every 2 seconds
+    const progressInterval = setInterval(() => {
+        if (progress < 100) {
+            progress += Math.random() * 15 + 5; // 5-20% increment
+            if (progress > 100) progress = 100;
+            
+            progressFill.style.width = progress + '%';
+            percentage.textContent = Math.round(progress) + '%';
+            
+            // Update steps
+            const stepIndex = Math.floor(progress / 20);
+            steps.forEach((step, index) => {
+                if (index <= stepIndex) {
+                    step.classList.add('active');
+                }
+            });
+            
+            // Update time estimate
+            const remainingTime = Math.max(0, 30 - (progress/100 * 30));
+            timeRemaining.textContent = `Estimated time: ${Math.round(remainingTime)} seconds remaining`;
+            
+            // Check if processing is complete
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+                setTimeout(() => {
+                    document.getElementById('redirectForm').submit();
+                }, 1000);
+            }
+        }
+    }, 2000);
+    
+    // Fun facts navigation
+    document.getElementById('prevFact').addEventListener('click', () => {
+        facts[currentFact].classList.remove('active');
+        dots[currentFact].classList.remove('active');
+        currentFact = (currentFact - 1 + facts.length) % facts.length;
+        facts[currentFact].classList.add('active');
+        dots[currentFact].classList.add('active');
+    });
+    
+    document.getElementById('nextFact').addEventListener('click', () => {
+        facts[currentFact].classList.remove('active');
+        dots[currentFact].classList.remove('active');
+        currentFact = (currentFact + 1) % facts.length;
+        facts[currentFact].classList.add('active');
+        dots[currentFact].classList.add('active');
+    });
+    
+    // Auto-rotate facts every 5 seconds
+    setInterval(() => {
+        facts[currentFact].classList.remove('active');
+        dots[currentFact].classList.remove('active');
+        currentFact = (currentFact + 1) % facts.length;
+        facts[currentFact].classList.add('active');
+        dots[currentFact].classList.add('active');
+    }, 5000);
+    
+    // If model info is passed from backend, update it
+    const modelName = document.getElementById('modelName');
+    const urlParams = new URLSearchParams(window.location.search);
+    const model = urlParams.get('model');
+    if (model) {
+        modelName.textContent = model.charAt(0).toUpperCase() + model.slice(1) + ' Model';
+    }
+});
+</script>
+{% endblock %}
