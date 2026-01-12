@@ -6,8 +6,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from .zeroscratches_wrapper import ZeroScratchesWrapper
-# Remove or comment out BPBTL import since we don't have it
-# from .bptbl_wrapper import BPBTLWrapper
+
 
 logger = logging.getLogger(__name__)
 
