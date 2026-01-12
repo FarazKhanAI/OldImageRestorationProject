@@ -12,6 +12,6 @@ requirements_path = "./requirements.txt"
 [[models]]
 name = "webapp"
 # The command to start your Flask app using Gunicorn, a production WSGI server
-handler = "gunicorn app:app"
+handler = "gunicorn main:app"
 # The port your application will listen on (Cerebrium provides this via env var)
 port = 8080
