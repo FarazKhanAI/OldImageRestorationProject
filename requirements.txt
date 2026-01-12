@@ -75,8 +75,8 @@ gunicorn==23.0.0
 python-dotenv==1.2.1
 
 # Core AI & Image Processing (Use latest compatible versions)
-torch==2.0.1
-torchvision==0.15.2
+torch>=2.5.1,<2.10.0
+torchvision>=0.20.1,<0.25.0
 numpy
 Pillow
 opencv-python
