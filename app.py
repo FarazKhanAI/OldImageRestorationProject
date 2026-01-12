@@ -11,6 +11,9 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import logging
 import queue
 
+# Import configuration
+from config import config
+
 # Import your model manager - FIXED IMPORTS
 try:
     from models.zeroscratches_wrapper import ZeroScratchesWrapper
@@ -20,8 +23,18 @@ except ImportError as e:
     logging.error(f"Failed to import ZeroScratchesWrapper: {e}")
     MODELS_AVAILABLE = False
 
+# Create Flask app
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Load configuration based on environment
+env = os.environ.get('FLASK_ENV', 'development')
+app.config.from_object(config[env])
+
+# Initialize app (creates directories)
+config[env].init_app(app)
+
+# Set secret key from config
+app.secret_key = app.config['SECRET_KEY']
 
 # Rate limiting
 limiter = Limiter(
@@ -30,21 +43,6 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://",
 )
-
-# Configuration
-BASE_DIR = Path(__file__).parent
-UPLOAD_FOLDER = BASE_DIR / 'static/uploads'
-RESULTS_FOLDER = BASE_DIR / 'static/results'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'tiff', 'webp'}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['RESULTS_FOLDER'] = RESULTS_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-
-# Create directories
-UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
-RESULTS_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # Global model instance (loaded once)
 _model_wrapper = None
@@ -61,25 +59,21 @@ def get_model_wrapper():
             if _model_wrapper is None:  # Double-check locking
                 try:
                     # Lazy load the model only when needed
-                    logging.info("Loading ZeroScratches model...")
-                    _model_wrapper = ZeroScratchesWrapper(max_workers=2)
-                    
-                    # Initialize the model
-                    if _model_wrapper.initialize():
-                        logging.info("ZeroScratches model loaded successfully")
-                    else:
-                        logging.error("Failed to initialize ZeroScratches model")
-                        _model_wrapper = None
-                        
+                    logging.info("Creating ZeroScratches wrapper...")
+                    _model_wrapper = ZeroScratchesWrapper(
+                        max_workers=app.config['ZEROSCRATCHES_MAX_WORKERS']
+                    )
+                    logging.info("ZeroScratches wrapper created (will initialize on first use)")
                 except Exception as e:
-                    logging.error(f"Failed to load model: {e}")
+                    logging.error(f"Failed to create model wrapper: {e}")
                     _model_wrapper = None
     
     return _model_wrapper
 
 def allowed_file(filename):
+    """Check if file extension is allowed"""
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 def generate_unique_filename(original_filename):
     """Generate unique filename with timestamp"""
@@ -88,11 +82,13 @@ def generate_unique_filename(original_filename):
     name, ext = os.path.splitext(original_filename)
     return f"{name}_{timestamp}_{unique_id}{ext}"
 
-
-
 def process_image_with_model(input_path, output_path, job_id, model_type='quick'):
     """Process image in background thread"""
     try:
+        # Check if another thread is already processing this job
+        if job_id in _results_cache and _results_cache[job_id].get('status') == 'processing':
+            logging.warning(f"Job {job_id} is already being processed, skipping duplicate")
+            return
         # Record start time
         _results_cache[job_id] = {
             'status': 'pending',
@@ -150,11 +146,6 @@ def process_image_with_model(input_path, output_path, job_id, model_type='quick'
         logging.error(f"Error processing image for job {job_id}: {error_msg}")
         _results_cache[job_id] = {'status': 'error', 'error': error_msg}
 
-
-
-
-
-
 def start_background_processing(input_path, output_path, job_id, model_type='quick'):
     """Start image processing in background thread"""
     thread = threading.Thread(
@@ -165,6 +156,7 @@ def start_background_processing(input_path, output_path, job_id, model_type='qui
     thread.start()
     return thread
 
+# Routes
 @app.route('/')
 def home():
     """Render the home page."""
@@ -195,7 +187,7 @@ def process_image():
             unique_filename = generate_unique_filename(filename)
             
             # Save the uploaded file
-            upload_path = UPLOAD_FOLDER / unique_filename
+            upload_path = app.config['UPLOAD_FOLDER'] / unique_filename
             file.save(upload_path)
             
             # Validate model type
@@ -210,7 +202,7 @@ def process_image():
             
             # Generate result filename
             result_filename = f"restored_{unique_filename}"
-            result_path = RESULTS_FOLDER / result_filename
+            result_path = app.config['RESULTS_FOLDER'] / result_filename
             
             # Generate unique job ID
             job_id = str(uuid.uuid4())
@@ -236,14 +228,12 @@ def process_image():
             return redirect(url_for('home'))
             
     except RequestEntityTooLarge:
-        flash('File size exceeds 10MB limit.', 'error')
+        flash(f'File size exceeds {app.config["MAX_CONTENT_LENGTH"] // (1024*1024)}MB limit.', 'error')
         return redirect(url_for('home'))
     except Exception as e:
         app.logger.error(f"Error processing image: {e}")
         flash('An error occurred while processing the image.', 'error')
         return redirect(url_for('home'))
-
-
 
 @app.route('/processing')
 def processing():
@@ -264,10 +254,6 @@ def processing():
                          job_id=job_id,
                          model_used=model_used)
 
-
-
-
-
 @app.route('/api/processing-status/<job_id>')
 def processing_status(job_id):
     """API endpoint to check processing status."""
@@ -276,7 +262,7 @@ def processing_status(job_id):
     
     result_data = _results_cache.get(job_id, {})
     
-    # Clean up old completed jobs (older than 1 hour)
+    # Clean up old completed jobs
     cleanup_old_jobs()
     
     return jsonify(result_data)
@@ -285,7 +271,6 @@ def cleanup_old_jobs():
     """Remove old job data from cache"""
     # Simple implementation: keep last 20 jobs
     if len(_results_cache) > 20:
-        # Remove oldest jobs (based on insertion order)
         keys_to_remove = list(_results_cache.keys())[:-20]
         for key in keys_to_remove:
             if _results_cache[key].get('status') == 'completed':
@@ -334,7 +319,7 @@ def history():
 def download_file(filename):
     """Download a processed image."""
     try:
-        file_path = RESULTS_FOLDER / filename
+        file_path = app.config['RESULTS_FOLDER'] / filename
         if file_path.exists():
             return send_file(file_path, as_attachment=True)
         else:
@@ -355,6 +340,8 @@ def health_check():
         'model': model_status,
         'cache_size': len(_results_cache),
         'models_available': MODELS_AVAILABLE,
+        'environment': env,
+        'max_file_size_mb': app.config['MAX_CONTENT_LENGTH'] // (1024*1024),
         'timestamp': time.time()
     })
 
@@ -364,17 +351,23 @@ def initialize_model_in_background():
     def init_model():
         try:
             logging.info("Starting background model initialization...")
-            wrapper = get_model_wrapper()
-            if wrapper:
-                logging.info("Background model initialization complete")
-            else:
-                logging.warning("Background model initialization failed")
+            # Only create the wrapper, don't force initialization
+            wrapper = ZeroScratchesWrapper(
+                max_workers=app.config['ZEROSCRATCHES_MAX_WORKERS']
+            )
+            # Don't call initialize() here - let it happen on first use
+            # Just store it so get_model_wrapper() returns it
+            global _model_wrapper
+            with _model_lock:
+                _model_wrapper = wrapper
+            logging.info("Model wrapper created (will initialize on first use)")
         except Exception as e:
             logging.error(f"Background model initialization error: {e}")
     
-    # Start initialization in background
-    init_thread = threading.Thread(target=init_model, daemon=True)
-    init_thread.start()
+    # Only initialize if we're not already in a reloader process
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true' and MODELS_AVAILABLE:
+        init_thread = threading.Thread(target=init_model, daemon=True)
+        init_thread.start()
 
 if __name__ == '__main__':
     # Set up logging
@@ -386,13 +379,26 @@ if __name__ == '__main__':
     print("=" * 60)
     print("BringMe - Starting Server")
     print("=" * 60)
+    print(f"Environment: {env}")
     print(f"Models available: {MODELS_AVAILABLE}")
-    print(f"Upload folder: {UPLOAD_FOLDER}")
-    print(f"Results folder: {RESULTS_FOLDER}")
-    print(f"Max file size: {MAX_FILE_SIZE // (1024*1024)}MB")
+    print(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
+    print(f"Results folder: {app.config['RESULTS_FOLDER']}")
+    print(f"Max file size: {app.config['MAX_CONTENT_LENGTH'] // (1024*1024)}MB")
+    print(f"Debug mode: {app.config['DEBUG']}")
     print("=" * 60)
     
     # Initialize model in background
-    initialize_model_in_background()
+    if not app.config['DEBUG'] or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        initialize_model_in_background()
     
-    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
+    # Get port from environment (Render sets PORT env var)
+    port = int(os.environ.get('PORT', 5000))
+    
+    # Run the app
+    app.run(
+        host='0.0.0.0',  # Important: Listen on all interfaces
+        port=port,
+        debug=app.config['DEBUG'],
+        threaded=True,
+        use_reloader=app.config['DEBUG'] and os.environ.get('WERKZEUG_RUN_MAIN') != 'true'
+    )

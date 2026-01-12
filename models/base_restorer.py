@@ -1,12 +1,10 @@
 """
 Base abstract class for all image restoration models.
-Ensures consistent interface across different models.
+Simplified version to fix numpy import issue.
 """
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Union, List, Dict, Any, Optional
-from PIL import Image
-import numpy as np
+from typing import List, Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,31 +23,17 @@ class BaseRestorer(ABC):
         pass
     
     @abstractmethod
-    def process_single(
-        self, 
-        input_data: Union[str, Path, Image.Image, np.ndarray],
-        **kwargs
-    ) -> Union[Image.Image, np.ndarray, None]:
+    def process_single(self, input_data, **kwargs):
         """Process a single image."""
         pass
     
     @abstractmethod
-    def process_batch(
-        self,
-        input_list: List[Union[str, Path, Image.Image, np.ndarray]],
-        progress_callback: Optional[callable] = None,
-        **kwargs
-    ) -> List[Union[Image.Image, np.ndarray, None]]:
+    def process_batch(self, input_list, progress_callback=None, **kwargs):
         """Process multiple images."""
         pass
     
     @abstractmethod
-    def process_folder(
-        self,
-        input_folder: Union[str, Path],
-        output_folder: Optional[Union[str, Path]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
+    def process_folder(self, input_folder, output_folder=None, **kwargs):
         """Process all images in a folder."""
         pass
     
