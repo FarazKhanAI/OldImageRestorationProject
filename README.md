@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/BringMe-Photo%20Restoration-blue" />
   <img src="https://img.shields.io/badge/Flask-2.3.3-green" />
-  <img src="https://img.shields.io/badge/Python-3.10%2B-yellow" />
+  <img src="https://img.shields.io/badge/Python-3.13%2B-yellow" />
   
 </p>
 
@@ -19,7 +19,7 @@
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Flask (Python 3.10.19)
+- **Backend**: Flask (Python 3.13.0)
 - **AI Models**: ZeroScratches, BPBTL (Coming Soon)
 - **Frontend**: HTML5, CSS3, JavaScript
 - **Styling**: Custom CSS with modern theme system

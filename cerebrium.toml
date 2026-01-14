@@ -1,17 +1,13 @@
 [cerebrium]
-# A name for your project
-name = "bringme"
+name = "bringme-photo-restoration"
 
 [build]
-# Match the Python version you are using (e.g., 3.13)
 python_version = "3.13"
-# Path to your requirements file (if not in the root, adjust the path)
 requirements_path = "./requirements.txt"
 
-# Your deployment is a web application
+# The key fix: Explicitly tell Cerebrium how to run YOUR app.
 [[models]]
 name = "webapp"
-# The command to start your Flask app using Gunicorn, a production WSGI server
-handler = "gunicorn main:app"
-# The port your application will listen on (Cerebrium provides this via env var)
-port = 8080
+# Use the line that matches your project's structure:
+handler = "gunicorn app:app"  # Use this if your main file is `app.py` and your Flask object is named `app`
+# handler = "gunicorn main:app" # Use this ONLY if you renamed your file to `main.py`

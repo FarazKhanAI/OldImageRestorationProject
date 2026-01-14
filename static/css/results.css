@@ -1,6 +1,6 @@
 /* Results Page Styles */
 .results-container {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 2rem 1rem;
     animation: fadeIn 0.5s ease;
@@ -48,6 +48,7 @@
     padding: 1rem;
     border: 2px solid var(--border-color);
     box-shadow: var(--box-shadow);
+    transition: filter 0.3s ease;
 }
 
 /* Download Button in Corner */
@@ -98,6 +99,123 @@
     font-size: 3rem;
     margin-bottom: 1rem;
     opacity: 0.5;
+}
+
+/* Edit Section */
+.edit-section {
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+}
+
+.edit-section h2 {
+    font-size: 1.8rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.edit-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-size: 1rem;
+}
+
+.edit-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.slider-control {
+    background: var(--background);
+    padding: 1.2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.slider-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.slider-value {
+    background: var(--accent);
+    color: var(--background);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 50px;
+    text-align: center;
+}
+
+.slider {
+    width: 100%;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #ddd, var(--accent));
+    outline: none;
+    border-radius: 3px;
+    margin-bottom: 0.5rem;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--background);
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--background);
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+.slider-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+}
+
+.slider-ticks span {
+    text-align: center;
+    flex: 1;
+}
+
+.edit-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Details Section */
@@ -185,6 +303,13 @@
 }
 
 /* Responsive Design */
+@media (max-width: 900px) {
+    .edit-controls {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
 @media (max-width: 768px) {
     .results-container {
         padding: 1.5rem 1rem;
@@ -206,6 +331,10 @@
         font-size: 1.1rem;
     }
     
+    .edit-section {
+        padding: 1.5rem;
+    }
+    
     .details-grid {
         grid-template-columns: 1fr;
         gap: 0.8rem;
@@ -214,6 +343,10 @@
     .action-buttons {
         flex-direction: column;
         gap: 0.8rem;
+    }
+    
+    .edit-buttons {
+        flex-direction: column;
     }
     
     .btn {
@@ -248,5 +381,13 @@
     
     .details-section {
         padding: 1rem;
+    }
+    
+    .edit-section {
+        padding: 1rem;
+    }
+    
+    .edit-controls {
+        gap: 1rem;
     }
 }
